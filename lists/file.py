@@ -42,6 +42,7 @@ class FileList(FileListBase):
 
 	def Initialize(self,dir,silent=False):
 		"""ディレクトリからファイル情報を取得し、リストを初期化する。入力は絶対パスでなければならない。情報が取得できなかった場合、errorCodes.OK以外が返る。silentがTrueなら読み上げは行われない。"""
+		self.ClearCache()
 		if isinstance(dir,list):#パラメータがリストなら、browsableObjects のリストとして処理刷る(ファイルリストを取得しないでコピーする)
 			self._copyFromList(dir)
 			return errorCodes.OK
@@ -77,7 +78,7 @@ class FileList(FileListBase):
 		#end 空のフォルダだったらさっさと帰る
 		for elem in lst:
 			fullpath=dir+"\\"+elem[8]
-			ret, shfileinfo=shell.SHGetFileInfo(fullpath,0,shellcon.SHGFI_ICON | shellcon.SHGFI_TYPENAME)
+			shfileinfo=self.GetShellInfo(fullpath)
 			if os.path.isfile(fullpath):
 				f=browsableObjects.File()
 				f.Initialize(dir,elem[8],fullpath,(elem[4]<<32)+elem[5], elem[3], elem[0], shfileinfo[4],elem[1],elem[9],shfileinfo[0])

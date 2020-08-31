@@ -4,16 +4,23 @@
 #Copyright (C) 2019-2020 yamahubuki <itiro.ishino@gmail.com>
 #Note: All comments except these top lines will be written in Japanese. 
 
+import os
 import win32file
 
 import constants
 
 from .base import FalconListBase
 from .constants import *
+from win32com.shell import shell, shellcon
 
 class FileListBase(FalconListBase):
 	def __init__(self):
 		super().__init__()
+		self.ClearCache()
+
+	def ClearCache(self):
+		self.imageCache={}			#拡張子->ImageIDのキャッシュ
+		self.typeStringCache={}		#拡張子->typeStringのキャッシュ
 
 	def GetAttributeCheckState(self):
 		"""このリストに入っているファイルを1個ずつとって、対応するファイルの属性値を取得していく。各属性に対して、リスト内の全てのファイルが持っていれば ATTRIB_FULL_CHECKED を帰す。一部のファイルが持っていれば、 ATTRIB_HALF_CHECKED を帰す。どのファイルも持っていなければ、 ATTRIB_NOT_CHECKED を帰す。このデータを、リストにして帰す。"""
@@ -44,3 +51,22 @@ class FileListBase(FalconListBase):
 		if found[SYSTEM]==l: ret[SYSTEM]=constants.FULL_CHECKED
 		if found[ARCHIVE]==l: ret[ARCHIVE]=constants.FULL_CHECKED
 		return ret
+
+	def GetShellInfo(self,fullpath):
+		"""
+			Cacheを活用し、効率的に画像とファイルタイプを収集する
+		"""
+		if os.path.isfile(fullpath):
+			ext=os.path.splitext(fullpath)[1]
+		else:
+			ext="/folder/"
+		if ext=="":
+			ret, shfileinfo=shell.SHGetFileInfo(fullpath,0,shellcon.SHGFI_ICON | shellcon.SHGFI_TYPENAME)
+			return shfileinfo
+		elif ext in self.typeStringCache:
+			return (self.imageCache[ext],None,None,None,self.typeStringCache[ext])
+		else:
+			ret, shfileinfo=shell.SHGetFileInfo(fullpath,0,shellcon.SHGFI_ICON | shellcon.SHGFI_TYPENAME)
+			self.typeStringCache[ext]=shfileinfo[4]
+			self.imageCache[ext]=shfileinfo[0]
+			return shfileinfo
