@@ -905,14 +905,10 @@ class Events(BaseEvents):
 
 		searchHistory=history.History(globalVars.app.config.getint("search","history_count",0,0,100),False)
 		grepHistory=history.History(globalVars.app.config.getint("search","history_count",0,0,100),False)
-		hist={}
+
 		try:
-			with open(constants.HISTORY_FILE_NAME, 'rb') as f:
-				hist=pickle.load(f)
-				searchHistory.lst=hist["search"]
-				searchHistory.cursor=len(hist["search"])-1
-				grepHistory.lst=hist["grep"]
-				grepHistory.cursor=len(hist["grep"])-1
+			searchHistory.loadFile(constants.HISTORY_FILE_NAME,"search")
+			grepHistory.loadFile(constants.HISTORY_FILE_NAME,"grep")
 		except:
 			pass
 
@@ -941,17 +937,15 @@ class Events(BaseEvents):
 		target={'action': actionstr, 'basePath': basePath, 'out_lst': out_lst, 'keyword': val['keyword'], 'isRegularExpression': val['isRegularExpression']}
 		self.parent.Navigate(target,as_new_tab=True)
 
-		if val['type']==0:
-			searchHistory.add(val['keyword'])
-		else:
-			grepHistory.add(val['keyword'])
-		hist["search"]=searchHistory.getList()
-		hist["grep"]=grepHistory.getList()
 		try:
-			with open(constants.HISTORY_FILE_NAME, 'wb') as f:
-				pickle.dump(hist,f)
+			if val['type']==0:
+				searchHistory.add(val['keyword'])
+				searchHistory.saveFile(constants.HISTORY_FILE_NAME,"search")
+			else:
+				grepHistory.add(val['keyword'])
+				grepHistory.saveFile(constants.HISTORY_FILE_NAME,"grep")
 		except:
-			pass
+			self.parent.log.warning("search keyword save failed.")
 
 	def GoForward(self,stream=False,admin=False):
 		"""forward アクションを実行。stream=True で、ファイルを開く代わりにストリームを開く。admin=True で、管理者モード。"""
